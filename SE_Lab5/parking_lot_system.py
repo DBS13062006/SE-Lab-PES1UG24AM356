@@ -10,9 +10,24 @@ import os
 import secrets
 
 parking_slots = {
-    "P01": {"plate": "KA01AB1234", "hours": 2, "rate": 20.0, "is_occupied": True},
-    "P02": {"plate": "TN07CD5678", "hours": 0, "rate": 20.0, "is_occupied": False},
-    "P03": {"plate": "MH02EF9012", "hours": 4, "rate": 30.0, "is_occupied": True},
+    "P01": {
+        "plate": "KA01AB1234",
+        "hours": 2,
+        "rate": 20.0,
+        "is_occupied": True,
+    },
+    "P02": {
+        "plate": "TN07CD5678",
+        "hours": 0,
+        "rate": 20.0,
+        "is_occupied": False,
+    },
+    "P03": {
+        "plate": "MH02EF9012",
+        "hours": 4,
+        "rate": 30.0,
+        "is_occupied": True,
+    },
 }
 
 # Mutable holder so the running total can be updated without `global`.
@@ -27,7 +42,7 @@ _OPERATORS = {
 
 
 def park_vehicle(slot_id, plate_no, hours_booked=1, entry_logs=None):
-    """Park a vehicle in a free slot; return True on success, False otherwise."""
+    """Park a vehicle in a free slot; return True on success."""
     if slot_id not in parking_slots or parking_slots[slot_id]["is_occupied"]:
         return False
     if hours_booked <= 0:
@@ -64,7 +79,7 @@ def check_slot_availability(slot_id):
 
 
 def _safe_eval(node, base_rate):
-    """Evaluate a surge expression made only of numbers, base_rate and + - * /."""
+    """Evaluate an expression of numbers, base_rate and + - * /."""
     if isinstance(node, ast.Expression):
         return _safe_eval(node.body, base_rate)
     if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
@@ -73,7 +88,9 @@ def _safe_eval(node, base_rate):
         return base_rate
     if isinstance(node, ast.BinOp) and type(node.op) in _OPERATORS:
         return _OPERATORS[type(node.op)](
-            _safe_eval(node.left, base_rate), _safe_eval(node.right, base_rate))
+            _safe_eval(node.left, base_rate),
+            _safe_eval(node.right, base_rate),
+        )
     raise ValueError("Unsupported surge expression")
 
 
@@ -111,7 +128,8 @@ def main():
     park_vehicle("P02", "DL03GH3456", 3)
     release_slot("P01")
     print("Is P02 available:", check_slot_availability("P02"))
-    print("Surge Parking Fee:", calculate_parking_fee("P03", "base_rate * 1.50"))
+    surge_fee = calculate_parking_fee("P03", "base_rate * 1.50")
+    print("Surge Parking Fee:", surge_fee)
     print("Vehicle Hash:", generate_vehicle_hash("KA01AB1234"))
     print("Ticket PIN:", generate_ticket_pin())
     export_parking_manifest()
